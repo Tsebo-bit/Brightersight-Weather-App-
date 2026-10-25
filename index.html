@@ -58,12 +58,12 @@
                     <form id="weather-form" class="search-form">
                         <svg class="search-icon"><use href="#i-search"/></svg>
                         <label class="visually-hidden" for="city-input">Search a city</label>
-                        <input type="text" id="city-input" placeholder="Try Cape Town, Tokyo, New York…" autocomplete="off" required aria-autocomplete="list" aria-controls="suggestions">
+                        <input type="text" id="city-input" placeholder="Try Tokyo, New York, Nairobi…" autocomplete="off" required aria-autocomplete="list" aria-controls="suggestions" aria-describedby="location-help status">
                         <button type="submit" aria-label="Search weather"><span>Find weather</span><svg><use href="#i-arrow"/></svg></button>
                     </form>
                     <div id="suggestions" class="suggestions" role="listbox" aria-label="City suggestions" hidden></div>
                 </div>
-                <p class="search-hint"><svg><use href="#i-pin"/></svg> Search any city to see its local sky &amp; time</p>
+                <p class="search-hint" id="location-help"><svg><use href="#i-pin"/></svg> Allow location access to load your local weather, or search any city. Exact coordinates go to Open-Meteo for weather; rounded coordinates and your request IP go to BigDataCloud for a nearby place name. BigDataCloud says it uses these pairs anonymously to improve geolocation. Brightersight does not store your coordinates.</p>
                 <p id="status" class="status" role="status" aria-live="polite">The world is looking lovely. Where shall we look?</p>
             </div>
             <button class="hero-art" id="sky-open" type="button" aria-label="Open an animated view of the selected location's sky">
@@ -84,7 +84,7 @@
 
         <section class="weather-card" id="weather-result" aria-label="Current weather" hidden>
             <div class="weather-main">
-                <div class="weather-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> THE WEATHER, RIGHT NOW</p><h2 id="city-name">Cape Town, South Africa</h2><p class="local-time"><svg><use href="#i-clock"/></svg><span id="local-clock">Local time</span><span class="timezone-label" id="timezone-label"></span></p></div>
+                <div class="weather-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> THE WEATHER, RIGHT NOW</p><h2 id="city-name">Your local weather</h2><p class="local-time"><svg><use href="#i-clock"/></svg><span id="local-clock">Local time</span><span class="timezone-label" id="timezone-label"></span></p></div>
                     <div class="condition-art" id="condition-art" aria-hidden="true"><svg><use href="#i-sun"/></svg><span class="condition-spark">✳</span></div>
                 </div>
                 <div class="current-reading"><div class="big-temp"><span id="temperature">—</span><span class="degree">°</span></div><div class="reading-copy"><p id="description">Clear sky</p><span>FEELS LIKE <b id="feels-like">—</b>°</span></div></div>

@@ -1,6 +1,7 @@
 
 const API_BASE = "https://api.open-meteo.com/v1/forecast";
 const GEO_BASE = "https://geocoding-api.open-meteo.com/v1/search";
+const REVERSE_GEO_BASE = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -24,11 +25,30 @@ let selectedLocation = null;
 let forecastData = null;
 let searchTimer = null;
 let searchController = null;
+let locationSearchController = null;
 let forecastController = null;
+let reverseGeocodeController = null;
 let searchVersion = 0;
+let weatherRequestVersion = 0;
 let cityTimezone = "UTC";
 let selectedForecastDay = 0;
 let localClockTimer = null;
+
+function beginWeatherSelection() {
+    weatherRequestVersion += 1;
+    clearTimeout(searchTimer);
+    searchTimer = null;
+    searchVersion += 1;
+    searchController?.abort();
+    searchController = null;
+    locationSearchController?.abort();
+    locationSearchController = null;
+    forecastController?.abort();
+    forecastController = null;
+    reverseGeocodeController?.abort();
+    reverseGeocodeController = null;
+    return weatherRequestVersion;
+}
 
 const introScenes = [
     ["i-sun", "A little sunshine, wherever you are."],
@@ -105,7 +125,7 @@ function openSkyView() {
     if (!forecastData || !selectedLocation) {
         openWeatherOverlay({
             title: "Your sky is almost ready", kicker: "A LITTLE LOOK OUTSIDE",
-            description: "Search for a city to bring its real sky to life here.",
+            description: "Allow location access or search for a city to bring its real sky to life here.",
             facts: [["WEATHER", "Waiting for a city"], ["LOCAL TIME", "—"]], weatherCode: 0
         });
         return;
@@ -192,16 +212,13 @@ async function fetchJSON(url, signal) {
 
 // Predictive search: find matching cities while the user types.
 cityInput.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-
-    const version = ++searchVersion;
     const query = cityInput.value.trim();
 
     selectedLocation = null;
-
-    if (searchController) {
-        searchController.abort();
-    }
+    beginWeatherSelection();
+    status.textContent = query
+        ? "Search for a city to load its weather."
+        : "Use your location or search for a city to load local weather.";
 
     if (query.length < 2) {
         suggestionsBox.replaceChildren();
@@ -209,6 +226,7 @@ cityInput.addEventListener("input", () => {
         return;
     }
 
+    const version = searchVersion;
     searchTimer = setTimeout(() => {
         searchCities(query, version);
     }, 90);
@@ -273,12 +291,13 @@ function showSuggestions(places) {
             : place.name;
 
         button.addEventListener("click", () => {
+            const requestVersion = beginWeatherSelection();
             selectedLocation = place;
             cityInput.value = place.name;
             suggestionsBox.hidden = true;
             suggestionsBox.replaceChildren();
 
-            loadWeather(place);
+            loadWeather(place, requestVersion);
         });
 
         suggestionsBox.appendChild(button);
@@ -295,20 +314,23 @@ form.addEventListener("submit", async (event) => {
 
     if (!query) return;
 
+    const requestVersion = beginWeatherSelection();
+    suggestionsBox.hidden = true;
+    suggestionsBox.replaceChildren();
+
     // Use the chosen suggestion when it matches the input.
     if (
         selectedLocation &&
         selectedLocation.name.toLowerCase() === query.toLowerCase()
     ) {
-        await loadWeather(selectedLocation);
+        await loadWeather(selectedLocation, requestVersion);
         return;
     }
 
     // Otherwise resolve the typed city.
-    clearTimeout(searchTimer);
-    ++searchVersion;
-
-    if (searchController) searchController.abort();
+    selectedLocation = null;
+    const controller = new AbortController();
+    locationSearchController = controller;
 
     try {
         status.textContent = "Searching for location...";
@@ -320,7 +342,9 @@ form.addEventListener("submit", async (event) => {
             format: "json"
         });
 
-        const data = await fetchJSON(`${GEO_BASE}?${params}`);
+        const data = await fetchJSON(`${GEO_BASE}?${params}`, controller.signal);
+
+        if (requestVersion !== weatherRequestVersion || controller.signal.aborted) return;
 
         if (!data.results?.length) {
             throw new Error("City not found. Try another spelling.");
@@ -335,22 +359,32 @@ form.addEventListener("submit", async (event) => {
 
         selectedLocation = data.results[0];
         cityInput.value = selectedLocation.name;
-        suggestionsBox.hidden = true;
 
-        await loadWeather(selectedLocation);
+        await loadWeather(selectedLocation, requestVersion);
     } catch (error) {
-        status.textContent = error.message;
+        if (error.name !== "AbortError" && requestVersion === weatherRequestVersion) {
+            status.textContent = error.message === "City not found. Try another spelling."
+                ? error.message
+                : "Couldn't search for that city. Check your connection and try again.";
+        }
     }
 });
 
 // Retrieve current weather, hourly temperatures and five daily forecasts.
-async function loadWeather(place) {
-    if (forecastController) forecastController.abort();
+async function loadWeather(place, requestVersion = beginWeatherSelection()) {
+    const latitude = place?.latitude;
+    const longitude = place?.longitude;
+
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        if (requestVersion === weatherRequestVersion) {
+            status.textContent = "This location could not be identified. Search for a city to try again.";
+        }
+        return;
+    }
 
     const controller = new AbortController();
     forecastController = controller;
-
-    const { latitude, longitude } = place;
 
     const params = new URLSearchParams({
         latitude: latitude,
@@ -383,7 +417,9 @@ async function loadWeather(place) {
     });
 
     try {
-        status.textContent = "Loading weather...";
+        status.textContent = place.name === "Your location"
+            ? "Loading your local weather..."
+            : `Loading weather for ${place.name}...`;
         weatherResult.hidden = true;
         forecastSection.hidden = true;
         hourlySection.hidden = true;
@@ -394,7 +430,10 @@ async function loadWeather(place) {
         );
 
         // Do not let an old request replace a newer selection.
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || requestVersion !== weatherRequestVersion) return;
+        if (!data.current || !data.hourly?.time?.length || !data.daily?.time?.length) {
+            throw new Error("Weather data is unavailable for that location.");
+        }
 
         forecastData = data;
         selectedLocation = place;
@@ -406,23 +445,59 @@ async function loadWeather(place) {
         weatherResult.hidden = false;
         forecastSection.hidden = false;
         hourlySection.hidden = false;
-        status.textContent = `Updated for ${place.name}.`;
+        status.textContent = `Updated for ${formatLocationName(place)}.`;
 
         // The graph initially shows today's hourly temperatures.
         displayHourlyChart(0);
         if (localClockTimer) clearInterval(localClockTimer);
         localClockTimer = window.setInterval(updateLocalClock, 30_000);
     } catch (error) {
-        if (error.name === "AbortError") return;
+        if (error.name === "AbortError" || requestVersion !== weatherRequestVersion) return;
+        status.textContent = error.message === "Weather data is unavailable for that location."
+            ? error.message
+            : "Weather couldn't be loaded. Check your connection and try again.";
+    }
+}
 
-        status.textContent = error.message;
+function formatLocationName(place) {
+    return [place?.name, place?.country].filter(Boolean).join(", ") || "Your location";
+}
+
+async function resolveNearbyLocation(place, requestVersion) {
+    const controller = new AbortController();
+    reverseGeocodeController = controller;
+    const params = new URLSearchParams({
+        latitude: place.latitude.toFixed(3),
+        longitude: place.longitude.toFixed(3),
+        localityLanguage: "en"
+    });
+
+    try {
+        const data = await fetchJSON(`${REVERSE_GEO_BASE}?${params}`, controller.signal);
+        if (controller.signal.aborted || requestVersion !== weatherRequestVersion) return;
+
+        const nearbyName = data.locality || data.city || data.principalSubdivision;
+        if (nearbyName) place.name = nearbyName;
+        if (data.countryName) place.country = data.countryName;
+
+        if (selectedLocation === place && !weatherResult.hidden) {
+            $("#city-name").textContent = formatLocationName(place);
+            status.textContent = `Updated for ${formatLocationName(place)}.`;
+            displayHourlyChart(selectedForecastDay);
+        }
+    } catch (error) {
+        // Weather uses the coordinates directly, so a name lookup failure is non-blocking.
+        if (error.name !== "AbortError" && requestVersion === weatherRequestVersion) {
+            place.name ||= "Your location";
+        }
+    } finally {
+        if (reverseGeocodeController === controller) reverseGeocodeController = null;
     }
 }
 
 // Display the current conditions.
 function displayCurrentWeather(place, current, daily) {
-    $("#city-name").textContent =
-        `${place.name}, ${place.country || ""}`;
+    $("#city-name").textContent = formatLocationName(place);
 
     $("#temperature").textContent =
         Math.round(current.temperature_2m);
@@ -735,26 +810,58 @@ document.addEventListener("click", (event) => {
     }
 });
 
-// Load an example location on startup.
-(async function initialiseWeather() {
-    try {
-        const params = new URLSearchParams({
-            name: "Cape Town",
-            count: "1",
-            language: "en",
-            format: "json"
-        });
-
-        const data = await fetchJSON(`${GEO_BASE}?${params}`);
-
-        if (data.results?.length) {
-            const capeTown = data.results[0];
-            selectedLocation = capeTown;
-            cityInput.value = capeTown.name;
-            await loadWeather(capeTown);
-        }
-    } catch (error) {
-        status.textContent =
-            "Enter a city to load its weather.";
+function locationErrorMessage(error) {
+    if (error?.code === 1) {
+        return "Location access was denied. Search for any city to see its weather.";
     }
-})();
+    if (error?.code === 3) {
+        return "Finding your location took too long. Search for a city instead.";
+    }
+    if (error?.code === 2) {
+        return "Your location isn't available right now. Search for a city instead.";
+    }
+    return "Location access isn't available here. Search for any city to see its weather.";
+}
+
+// Ask once on page load; later city searches never request location again.
+function initialiseWeather() {
+    if (!navigator.geolocation) {
+        status.textContent = "Location access isn't supported here. Search for any city to see its weather.";
+        return;
+    }
+
+    status.textContent = "Allow location access to load your local weather, or search for a city instead.";
+    const requestVersion = beginWeatherSelection();
+
+    try {
+        navigator.geolocation.getCurrentPosition((position) => {
+            if (requestVersion !== weatherRequestVersion) return;
+
+            const latitude = position?.coords?.latitude;
+            const longitude = position?.coords?.longitude;
+            if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+                !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+                status.textContent = "Your location couldn't be read. Search for a city instead.";
+                return;
+            }
+
+            const place = { name: "Your location", country: "", latitude, longitude };
+            void loadWeather(place, requestVersion);
+            void resolveNearbyLocation(place, requestVersion);
+        }, (error) => {
+            if (requestVersion === weatherRequestVersion) {
+                status.textContent = locationErrorMessage(error);
+            }
+        }, {
+            enableHighAccuracy: false,
+            timeout: 12000,
+            maximumAge: 300000
+        });
+    } catch (error) {
+        if (requestVersion === weatherRequestVersion) {
+            status.textContent = locationErrorMessage(error);
+        }
+    }
+}
+
+initialiseWeather();
