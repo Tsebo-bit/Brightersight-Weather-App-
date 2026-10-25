@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Brightersight</title>
+  <desc id="description">The Brightersight logo: a letter B inside its brand mark, the name Brightersight, and the quote: Like the weather, life changes. There’s light in every forecast.</desc>
+  <defs>
+    <radialGradient id="logo-wash" cx="48%" cy="48%" r="60%">
+      <stop offset="0" stop-color="#fff8e9"/>
+      <stop offset=".78" stop-color="#ead6b7"/>
+      <stop offset="1" stop-color="#e4ceb0" stop-opacity=".18"/>
+    </radialGradient>
+    <filter id="mark-shadow" x="-.3" y="-.3" width="1.7" height="1.7">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#233a35" flood-opacity=".15"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="#f2eee6"/>
+  <circle cx="340" cy="500" r="300" fill="url(#logo-wash)"/>
+  <g fill="none" stroke="#fffaf0" stroke-width="2">
+    <circle cx="340" cy="500" r="270" opacity=".72"/>
+    <circle cx="340" cy="500" r="222" opacity=".58"/>
+  </g>
+  <g filter="url(#mark-shadow)">
+    <circle cx="340" cy="500" r="95" fill="#233a35"/>
+    <text x="340" y="538" fill="#f2eee6" font-family="Arial,sans-serif" font-size="104" font-weight="700" text-anchor="middle">B</text>
+    <circle cx="407" cy="429" r="8" fill="#e6b674"/>
+  </g>
+  <text x="565" y="355" fill="#77817a" font-family="Arial,sans-serif" font-size="18" letter-spacing="4">YOUR DAILY WEATHER COMPANION</text>
+  <text x="560" y="465" font-size="94" letter-spacing="-3"><tspan fill="#233a35" font-family="Arial,sans-serif" font-weight="700">Brighter</tspan><tspan fill="#233a35" font-family="Arial,sans-serif" font-weight="400">sight</tspan></text>
+  <path d="M566 525h128" stroke="#d78363" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="707" cy="525" r="4" fill="#d78363"/>
+  <text x="565" y="594" fill="#233a35" font-family="Georgia,serif" font-size="34" font-style="italic">“Like the weather, life changes.</text>
+  <text x="565" y="645" fill="#233a35" font-family="Georgia,serif" font-size="34" font-style="italic">There’s light in every forecast.”</text>
+  <text x="565" y="734" fill="#77817a" font-family="Arial,sans-serif" font-size="16" letter-spacing="3">A LITTLE MORE LIGHT ON THE WEATHER</text>
+</svg>

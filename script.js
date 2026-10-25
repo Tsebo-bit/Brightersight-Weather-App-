@@ -14,6 +14,11 @@ const chartCanvas = $("#hourly-chart");
 const themeToggle = $("#theme-toggle");
 const forecastSection = $("#forecast");
 const hourlySection = $("#hourly-section");
+const skyOpenButton = $("#sky-open");
+const weatherOverlay = $("#weather-overlay");
+const overlayScene = $("#overlay-scene");
+const overlayClose = weatherOverlay.querySelector(".overlay-close");
+let overlayReturnFocus = null;
 
 let selectedLocation = null;
 let forecastData = null;
@@ -65,6 +70,66 @@ let savedTheme = null;
 try { savedTheme = localStorage.getItem("brightersight-theme"); } catch { /* Use the device setting. */ }
 setDarkMode(savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches, false);
 themeToggle.addEventListener("click", () => setDarkMode(document.body.dataset.mode !== "dark"));
+
+function openWeatherOverlay({ title, kicker, description, facts, weatherCode, sky = document.body.dataset.sky, moonPhase = 0.5 }) {
+    overlayReturnFocus = document.activeElement;
+    const theme = weatherTheme(weatherCode);
+    overlayScene.dataset.sky = sky || "day";
+    overlayScene.dataset.condition = theme;
+    overlayScene.dataset.time = document.body.dataset.time || "noon";
+    overlayScene.dataset.mode = document.body.dataset.mode || "light";
+    const phaseCosine = Math.cos(2 * Math.PI * moonPhase);
+    const shadowCenter = moonPhase <= 0.5
+        ? 50 - (1 - phaseCosine) * 39
+        : 50 + (1 - phaseCosine) * 39;
+    overlayScene.style.setProperty("--moon-shadow-x", `${Math.max(-29, Math.min(129, shadowCenter))}%`);
+    overlayScene.querySelector(".scene-condition use").setAttribute("href", `#${weatherIcon(weatherCode)}`);
+    $("#overlay-kicker").textContent = kicker;
+    $("#overlay-title").textContent = title;
+    $("#overlay-description").textContent = description;
+    const factContainer = $("#overlay-facts");
+    factContainer.replaceChildren();
+    facts.forEach(([label, value]) => {
+        const item = document.createElement("div");
+        const name = document.createElement("span");
+        const detail = document.createElement("strong");
+        name.textContent = label;
+        detail.textContent = value;
+        item.append(name, detail);
+        factContainer.append(item);
+    });
+    weatherOverlay.showModal();
+}
+
+function openSkyView() {
+    if (!forecastData || !selectedLocation) {
+        openWeatherOverlay({
+            title: "Your sky is almost ready", kicker: "A LITTLE LOOK OUTSIDE",
+            description: "Search for a city to bring its real sky to life here.",
+            facts: [["WEATHER", "Waiting for a city"], ["LOCAL TIME", "—"]], weatherCode: 0
+        });
+        return;
+    }
+    const current = forecastData.current;
+    const phase = Number(forecastData.daily.moon_phase?.[0] ?? 0.5);
+    const localTime = new Intl.DateTimeFormat("en", {
+        timeZone: cityTimezone, weekday: "long", hour: "numeric", minute: "2-digit"
+    }).format(new Date());
+    openWeatherOverlay({
+        title: `${selectedLocation.name}, ${selectedLocation.country || ""}`.replace(/,\s*$/, ""),
+        kicker: "THE SKY, RIGHT NOW",
+        description: `${describeWeather(current.weather_code)} · ${Math.round(current.temperature_2m)}°C. Take a moment beneath the ${document.body.dataset.sky === "night" ? "night" : "day"} sky.`,
+        facts: [["LOCAL TIME", localTime], ["TIME ZONE", cityTimezone.replaceAll("_", " ")], ["MOON", moonPhaseName(phase)]],
+        weatherCode: current.weather_code, moonPhase: phase
+    });
+}
+
+skyOpenButton.addEventListener("click", openSkyView);
+overlayClose.addEventListener("click", () => weatherOverlay.close());
+weatherOverlay.addEventListener("click", (event) => {
+    if (event.target === weatherOverlay) weatherOverlay.close();
+});
+weatherOverlay.addEventListener("close", () => overlayReturnFocus?.focus());
 
 // Convert Open-Meteo weather codes into readable descriptions.
 function describeWeather(code) {
@@ -505,6 +570,13 @@ function displayFiveDayForecast(daily) {
             card.setAttribute("aria-pressed", "true");
             selectedForecastDay = index;
             displayHourlyChart(index);
+            openWeatherOverlay({
+                title: `${formatDay(date, cityTimezone)} in ${selectedLocation?.name || "your city"}`,
+                kicker: "A LITTLE LOOK AHEAD",
+                description: `${describeWeather(daily.weather_code[index])} expected, with a high of ${Math.round(daily.temperature_2m_max[index])}°C and a low of ${Math.round(daily.temperature_2m_min[index])}°C.`,
+                facts: [["RAIN CHANCE", `${daily.precipitation_probability_max[index] ?? "—"}%`], ["SUNRISE", formatTime(daily.sunrise?.[index])], ["SUNSET", formatTime(daily.sunset?.[index])]],
+                weatherCode: daily.weather_code[index], sky: "day", moonPhase: Number(daily.moon_phase?.[index] ?? 0.5)
+            });
         });
 
         forecastContainer.appendChild(card);
