@@ -1,0 +1,16 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Local configuration
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Debug logs
+npm-debug.log*

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f2eee6">
+    <meta name="description" content="A little more light on the weather. Find the forecast for any city with Brightersight.">
+    <title>Brightersight — Weather, in a brighter light</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body data-time="morning" data-weather="clear">
+    <div class="intro" id="intro" aria-label="Loading Brightersight">
+        <div class="intro-orbit orbit-one"></div><div class="intro-orbit orbit-two"></div>
+        <div class="intro-sky" id="intro-sky" aria-hidden="true"></div>
+        <p class="intro-brand">Brighter<span>sight</span></p>
+        <p class="intro-caption" id="intro-caption">A little sunshine, wherever you are.</p>
+        <div class="intro-progress"><span></span></div>
+        <span class="intro-kicker">YOUR WINDOW TO THE WEATHER</span>
+    </div>
+
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+        <symbol id="i-sun" viewBox="0 0 64 64"><circle cx="32" cy="32" r="12"/><path d="M32 4v8m0 40v8M4 32h8m40 0h8M12.2 12.2l5.7 5.7m28.2 28.2 5.7 5.7m0-39.6-5.7 5.7m-28.2 28.2-5.7 5.7"/></symbol>
+        <symbol id="i-cloud" viewBox="0 0 64 64"><path d="M17 46h31a11 11 0 0 0 0-22 17 17 0 0 0-33-3A12.5 12.5 0 0 0 17 46Z"/></symbol>
+        <symbol id="i-partly" viewBox="0 0 64 64"><path d="M40 9v6m15 2-4 4M61 32h-6M20 17l4 4m-3 11a11 11 0 1 1 21 4"/><path d="M14 50h34a10 10 0 0 0 0-20 15 15 0 0 0-29-2A11 11 0 0 0 14 50Z"/></symbol>
+        <symbol id="i-rain" viewBox="0 0 64 64"><path d="M14 39h35a10 10 0 0 0 0-20 15 15 0 0 0-29-2 11 11 0 0 0-6 22Z"/><path d="m22 46-4 8m17-8-4 8m17-8-4 8"/></symbol>
+        <symbol id="i-storm" viewBox="0 0 64 64"><path d="M14 36h35a10 10 0 0 0 0-20 15 15 0 0 0-29-2 11 11 0 0 0-6 22Z"/><path d="m34 35-9 14h8l-3 12 14-18h-9l5-8"/></symbol>
+        <symbol id="i-snow" viewBox="0 0 64 64"><path d="M14 34h35a10 10 0 0 0 0-20 15 15 0 0 0-29-2 11 11 0 0 0-6 22Z"/><path d="M22 43v12m-5-9 10 6m0-6-10 6m23-9v12m-5-9 10 6m0-6-10 6"/></symbol>
+        <symbol id="i-fog" viewBox="0 0 64 64"><path d="M18 31a14 14 0 0 1 27-5 9 9 0 0 1 1 18H18a7 7 0 0 1 0-14Z"/><path d="M10 48h42M16 56h31"/></symbol>
+        <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s7 7.1 7 12a7 7 0 1 1-14 0c0-4.9 7-12 7-12Z"/><path d="M9 16a3 3 0 0 0 3 3"/></symbol>
+        <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h13a3 3 0 1 0-3-3M3 12h17a2 2 0 1 1-2 2M3 16h11a3 3 0 1 1-3 3"/></symbol>
+        <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M14 14.8V5a3 3 0 0 0-6 0v9.8a5 5 0 1 0 6 0Z"/><path d="M11 11v7"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/></symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    </svg>
+
+    <main class="page-shell">
+        <header class="topbar">
+            <a class="wordmark" href="#top" aria-label="Brightersight home"><span class="brand-mark">b.</span><span>brighter<span class="wordmark-light">sight</span></span></a>
+            <div class="top-note"><span class="live-dot"></span> YOUR DAILY WEATHER COMPANION</div>
+            <div class="top-actions"><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg><use href="#i-moon"/></svg><span>Dark mode</span></button><a class="top-link" href="#about">A little more light <span>↗</span></a></div>
+        </header>
+
+        <section class="hero" id="top">
+            <div class="hero-copy">
+                <p class="eyebrow"><span class="eyebrow-line"></span> WEATHER, WHERE YOU ARE</p>
+                <h1>Look outside.<br><span>Feel the day.</span></h1>
+                <p class="hero-description">A clearer little picture of the sky, wherever life takes you.</p>
+                <div class="search-wrap">
+                    <form id="weather-form" class="search-form">
+                        <svg class="search-icon"><use href="#i-search"/></svg>
+                        <label class="visually-hidden" for="city-input">Search a city</label>
+                        <input type="text" id="city-input" placeholder="Try Cape Town, Tokyo, New York…" autocomplete="off" required aria-autocomplete="list" aria-controls="suggestions">
+                        <button type="submit" aria-label="Search weather"><span>Find weather</span><svg><use href="#i-arrow"/></svg></button>
+                    </form>
+                    <div id="suggestions" class="suggestions" role="listbox" aria-label="City suggestions" hidden></div>
+                </div>
+                <p class="search-hint"><svg><use href="#i-pin"/></svg> Search any city to see its local sky &amp; time</p>
+                <p id="status" class="status" role="status" aria-live="polite">The world is looking lovely. Where shall we look?</p>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <div class="art-label"><span>THE SKY, RIGHT NOW</span><span>№ 01</span></div>
+                <div class="art-celestial" id="sky-celestial" aria-hidden="true">
+                    <div class="art-sun"></div>
+                    <svg class="art-moon" id="art-moon" viewBox="0 0 100 100" aria-hidden="true"><circle class="moon-base" cx="50" cy="50" r="39"/><circle class="moon-shadow" id="moon-shadow" cx="50" cy="50" r="39"/></svg>
+                </div>
+                <div class="art-halo"></div>
+                <svg class="art-cloud cloud-back" viewBox="0 0 230 130"><path d="M47 105h135a36 36 0 0 0 0-72 54 54 0 0 0-104-9 39 39 0 0 0-31 81Z"/></svg>
+                <svg class="art-cloud cloud-front" viewBox="0 0 230 130"><path d="M32 103h145a39 39 0 0 0 0-78 58 58 0 0 0-111-10A43 43 0 0 0 32 103Z"/></svg>
+                <svg class="sky-condition" id="sky-condition" viewBox="0 0 64 64" aria-hidden="true"><use href="#i-cloud"/></svg>
+                <span class="spark spark-a">✳</span><span class="spark spark-b">✳</span><span class="spark spark-c">·</span>
+                <div class="art-caption"><span id="sky-caption-time">YOUR LOCAL SKY</span><span id="sky-caption-weather">A NEW DAY, A NEW SKY</span></div>
+                <div class="art-orbit orbit-a"></div><div class="art-orbit orbit-b"></div>
+            </div>
+        </section>
+
+        <section class="weather-card" id="weather-result" aria-label="Current weather" hidden>
+            <div class="weather-main">
+                <div class="weather-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> THE WEATHER, RIGHT NOW</p><h2 id="city-name">Cape Town, South Africa</h2><p class="local-time"><svg><use href="#i-clock"/></svg><span id="local-clock">Local time</span><span class="timezone-label" id="timezone-label"></span></p></div>
+                    <div class="condition-art" id="condition-art" aria-hidden="true"><svg><use href="#i-sun"/></svg><span class="condition-spark">✳</span></div>
+                </div>
+                <div class="current-reading"><div class="big-temp"><span id="temperature">—</span><span class="degree">°</span></div><div class="reading-copy"><p id="description">Clear sky</p><span>FEELS LIKE <b id="feels-like">—</b>°</span></div></div>
+                <div class="dayline"><span class="dayline-dot"></span><span id="dayline-text">A fresh look at your local sky</span></div>
+            </div>
+            <div class="weather-details">
+                <div class="details-top"><span>IN THE AIR</span><span class="details-star">✳</span></div>
+                <div class="detail-row"><span class="detail-icon"><svg><use href="#i-drop"/></svg></span><div><span class="detail-label">Humidity</span><strong><span id="humidity">—</span><small>%</small></strong></div></div>
+                <div class="detail-row"><span class="detail-icon"><svg><use href="#i-wind"/></svg></span><div><span class="detail-label">Wind speed</span><strong><span id="wind">—</span><small> km/h</small></strong></div></div>
+                <div class="detail-row"><span class="detail-icon"><svg><use href="#i-thermo"/></svg></span><div><span class="detail-label">Feels like</span><strong><span id="feels-detail">—</span><small>°C</small></strong></div></div>
+                <div class="data-note"><span class="live-dot"></span> LIVE CONDITIONS <span>·</span> OPEN-METEO</div>
+            </div>
+        </section>
+
+        <section class="forecast" id="forecast" aria-label="Five day forecast" hidden>
+            <div class="forecast-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> COMING UP</p><h2>Five days, <span>at a glance.</span></h2></div><span class="forecast-note">LOCAL FORECAST <span>·</span> °C</span></div>
+            <div class="forecast-grid" id="five-day-forecast"></div>
+        </section>
+
+        <section class="hourly-section" id="hourly-section" aria-label="Hourly temperature forecast" hidden>
+            <div class="forecast-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> THE HOURS AHEAD</p><h2>Follow the <span>temperature.</span></h2></div><span class="forecast-note">HOURLY <span>·</span> °C</span></div>
+            <p class="hourly-hint">Choose a day above to explore its temperature, hour by hour.</p>
+            <div class="chart-panel"><div class="chart-wrap" id="hourly-chart" aria-label="Hourly temperature graph" role="img"></div></div>
+        </section>
+
+        <section class="day-guide" aria-label="A day in six moments"><div class="guide-intro"><span class="guide-number">01—06</span><span>THE DAY, IN SIX MOMENTS</span></div><div class="day-moments"><div class="moment" data-moment="sunrise"><span class="moment-icon sunrise-icon">◒</span><span class="moment-name">Sunrise</span><span class="moment-time">05 — 07</span></div><div class="moment" data-moment="morning"><span class="moment-icon">✳</span><span class="moment-name">Morning</span><span class="moment-time">07 — 11</span></div><div class="moment" data-moment="noon"><span class="moment-icon">☼</span><span class="moment-name">Noon</span><span class="moment-time">11 — 14</span></div><div class="moment" data-moment="afternoon"><span class="moment-icon">◉</span><span class="moment-name">Afternoon</span><span class="moment-time">14 — 17</span></div><div class="moment" data-moment="sunset"><span class="moment-icon sunset-icon">◒</span><span class="moment-name">Sunset</span><span class="moment-time">17 — 19</span></div><div class="moment" data-moment="night"><span class="moment-icon">☾</span><span class="moment-name">Night</span><span class="moment-time">19 — 05</span></div></div></section>
+
+        <footer id="about"><span>Made for the way the day feels.</span><span>BRIGHTERSIGHT <span class="footer-star">✳</span> WEATHER, IN A BRIGHTER LIGHT</span></footer>
+    </main>
+</body>
+</html>
